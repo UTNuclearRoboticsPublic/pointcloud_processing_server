@@ -1,0 +1,6 @@
+
+map_maker_pcs:
+  map_origin:     [0.0, 0.0, 0.0]
+  map_rotation:   [0.0, 0.0, 0.0]
+  cam_origin:     [0.0, 0.0, 0.0]
+  cam_rotation:   [-1.57, 0.0, 3.14]

@@ -1,0 +1,85 @@
+
+pointcloud_process:
+  tunnel_basic:
+    min_cloud_size:       50
+    # NOTE - task names in task_list below MUST match the subheadings under the tasks heading
+    task_list:            [ transform, clip, voxelize ]
+    tasks:
+      transform:
+        type:             1     # Transformation
+        map_name:         map
+        should_publish:   true
+        publish_topic:    transformed_cloud
+      clip: 
+        type:             2     # Clipping (Cond)
+        box:              [ -5, 5, -2.1, 2.1, -1, 3.7, 0, 0, 0, 0, 0, 0 ]
+        keep_ordered:     true
+        should_publish:   true
+        publish_topic:    clipped_cloud
+      voxelize:           
+        type:             4     # Voxelization
+        leaf_sizes:       [ 0.02, 0.02, 0.02 ]
+        keep_ordered:     false
+        should_publish:   true
+        publish_topic:    voxelized_cloud
+      radius_filter:
+        type:             8
+        search_radius:    0.02
+        min_neighbors:    10
+        keep_ordered:     false
+        should_publish:   true
+        publish_topic:    radius_filtered_cloud
+      statistical_filter:
+        type:             9
+        k_min:            50 
+        std_mul:          0.1
+        keep_ordered:     true
+        should_publish:   true
+        publish_topic:    statistical_filtered_cloud
+      plane_seg:
+        type:             5     # Planar Segmentation
+        max_iterations:   250
+        dist_threshold:   0.007
+        should_publish:   true
+        publish_topic:    plane_cloud
+        should_publish_r: true
+        publish_topic_r:  planeless_cloud
+        remove_cloud:     true
+      plane_seg2:
+        type:             5     # Planar Segmentation
+        max_iterations:   250
+        dist_threshold:   0.007
+        should_publish:   true
+        publish_topic:    plane_cloud2
+        should_publish_r: true
+        publish_topic_r:  planeless_cloud2
+        remove_cloud:     true
+      plane_seg3:
+        type:             5     # Planar Segmentation
+        max_iterations:   250
+        dist_threshold:   0.007
+        should_publish:   true
+        publish_topic:    plane_cloud3
+        should_publish_r: true
+        publish_topic_r:  planeless_cloud3
+        remove_cloud:     true
+      cylinder_seg:
+        type:             6     # Cylinder Segmentation
+        max_iterations:   250
+        dist_threshold:   0.02
+        should_publish:   true
+        publish_topic:    cylinder_cloud
+        should_publish_r: true
+        publish_topic_r:  cylinderless_cloud
+        remove_cloud:     true
+        max_radius:       0.15       # meters
+      cylinder_seg2:  
+        type:             6     # Cylinder Segmentation
+        max_iterations:   250
+        dist_threshold:   0.02
+        should_publish:   true
+        publish_topic:    cylinder_cloud2
+        should_publish_r: true
+        publish_topic_r:  cylinderless_cloud2
+        remove_cloud:     true
+        max_radius:       0.15       # meters

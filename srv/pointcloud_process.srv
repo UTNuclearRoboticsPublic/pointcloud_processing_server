@@ -1,0 +1,12 @@
+# -------------------------------- GOAL DEFINITION ---------------------------------
+
+pointcloud_task[] tasks
+int32 min_cloud_size
+sensor_msgs/PointCloud2 pointcloud 		
+
+---
+# -------------------------------- RESULT DEFINITION ---------------------------------
+
+pointcloud_task_result[] task_results
+bool failed
+int32 failed_during_task_num
