@@ -66,6 +66,7 @@ bool PointcloudProcessing::pointcloud_service(pointcloud_processing_server::poin
     switch(req.tasks[i].type_ind){    
       // -------------- PointCloud TF Transform --------------
       case 1:
+      {
         if(i==0)    // If the first task, transform from original input pointcloud frame 
           res.task_results.push_back( transformPointCloud(input_cloud_, req.tasks[i].str_parameters[0], req.pointcloud.header.frame_id) );
         else        // Otherwise, transform from frame of pointcloud output of last process 
@@ -73,7 +74,7 @@ bool PointcloudProcessing::pointcloud_service(pointcloud_processing_server::poin
         task_counts_[1]++;
         cloud_size = input_cloud_->points.size();
         break;
-
+      }
       // ----------- Clip PointCloud -----------
       case 2:
       {
