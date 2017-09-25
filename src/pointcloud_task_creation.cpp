@@ -352,8 +352,8 @@ namespace PointcloudTaskCreation
 			// Where should task publish its output cloud?
 			if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/publish_topic", temp_string) )
 			{
-				ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get publishing topic for transform, in " << task_list[i] << " task of process " << yaml_file_name << "." );
-				return false;
+				ROS_WARN_STREAM("[PointcloudTaskCreation] Failed to get publishing topic for transform, in " << task_list[i] << " task of process " << yaml_file_name << "." );
+				task.pub_topic = "default_cloud_output_topic";
 			}
 			else 
 				task.pub_topic = temp_string;
