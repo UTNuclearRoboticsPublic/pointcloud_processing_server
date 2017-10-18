@@ -194,9 +194,9 @@ namespace PointcloudUtilities
         bool plane_acceptable = false;
         bool process_failed = false;
         
-        while ( !plane_acceptable && !process_failed )
+        while ( !plane_acceptable && !process_failed && ros::ok() )
         {
-            while ( !client->call(process) ) // If we couldn't read output, the service probably isn't up yet --> retry
+            while ( !client->call(process) && ros::ok() ) // If we couldn't read output, the service probably isn't up yet --> retry
             {
                 ROS_ERROR("[PointcloudUtilities] Service 'pointcloud_service' returned false - may not be up yet. Trying again in 2 seconds...");
                 ros::Duration(1).sleep();
