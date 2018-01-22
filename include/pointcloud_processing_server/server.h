@@ -37,14 +37,34 @@
 #include <cmath>
 
 //usefule PCL typedefs
-typedef pcl::PointXYZRGB PCLPoint;
-typedef pcl::PointXYZRGBNormal PCLPointNormal;
-typedef pcl::PointCloud<PCLPoint> PC;
-typedef pcl::PointCloud<PCLPoint>::Ptr PCP;
-typedef std::vector<pcl::PointIndices> IndexVector;
+//typedef pcl::PointXYZRGB PCLPoint;
+//typedef pcl::PointXYZRGBNormal PCLPointNormal;
+//typedef pcl::PointCloud<PCLPoint> PC;
+//typedef pcl::PointCloud<PCLPoint>::Ptr PCP;
+//typedef std::vector<pcl::PointIndices> IndexVector;
 
+template <typename PointType> 
 class PointcloudProcessing
 { 
+public:
+  //usefule PCL typedefs
+  typedef typename pcl::PointCloud<PointType> PC;
+  typedef typename pcl::PointCloud<PointType>::Ptr PCP;
+
+	PointcloudProcessing();
+	bool getShutdownStatus();
+	bool pointcloud_service(pointcloud_processing_server::pointcloud_process::Request &req, pointcloud_processing_server::pointcloud_process::Response &res);
+	pointcloud_processing_server::pointcloud_task_result transformPointCloud(PCP &input, std::string transform_to_frame, std::string starting_frame);
+  pointcloud_processing_server::pointcloud_task_result clipPointCloud(PCP &unclipped, std::vector<float> box_data, std::vector<float> box_pose, bool keep_ordered);
+	pointcloud_processing_server::pointcloud_task_result clipPointCloudConditional(PCP &unclipped, std::vector<float> ranges, bool keep_ordered);
+	pointcloud_processing_server::pointcloud_task_result voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size);
+	pointcloud_processing_server::pointcloud_task_result segmentTowardPlane(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud);
+	pointcloud_processing_server::pointcloud_task_result segmentTowardCylinder(PCP &input, int max_iterations, float threshold_distance, float max_radius, bool remove_cloud);
+  pointcloud_processing_server::pointcloud_task_result segmentTowardLine(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud);
+  pointcloud_processing_server::pointcloud_task_result radiusOutlierFilter(PCP &unfiltered, float search_radius, int min_neighbors, bool keep_ordered);
+  pointcloud_processing_server::pointcloud_task_result statisticalOutlierFilter(PCP &unfiltered, int k_min, float std_mul, bool keep_ordered);
+  bool checkMinSize(int cloud_size, int min_num_points, std::string task_name);
+
 protected:
   ros::NodeHandle nh_;
   // NodeHandle instance must be created before this line. Otherwise strange error may occur.
@@ -59,21 +79,6 @@ protected:
   bool should_shut_down;
 
   int task_counts_[8];              // For some reason decided to make indices start at 1, not 0. 
-
-public:
-	PointcloudProcessing();
-	bool getShutdownStatus();
-	bool pointcloud_service(pointcloud_processing_server::pointcloud_process::Request &req, pointcloud_processing_server::pointcloud_process::Response &res);
-	pointcloud_processing_server::pointcloud_task_result transformPointCloud(PCP &input, std::string transform_to_frame, std::string starting_frame);
-  pointcloud_processing_server::pointcloud_task_result clipPointCloud(PCP &unclipped, std::vector<float> box_data, std::vector<float> box_pose, bool keep_ordered);
-	pointcloud_processing_server::pointcloud_task_result clipPointCloudConditional(PCP &unclipped, std::vector<float> ranges, bool keep_ordered);
-	pointcloud_processing_server::pointcloud_task_result voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size);
-	pointcloud_processing_server::pointcloud_task_result segmentTowardPlane(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud);
-	pointcloud_processing_server::pointcloud_task_result segmentTowardCylinder(PCP &input, int max_iterations, float threshold_distance, float max_radius, bool remove_cloud);
-  pointcloud_processing_server::pointcloud_task_result segmentTowardLine(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud);
-  pointcloud_processing_server::pointcloud_task_result radiusOutlierFilter(PCP &unfiltered, float search_radius, int min_neighbors, bool keep_ordered);
-  pointcloud_processing_server::pointcloud_task_result statisticalOutlierFilter(PCP &unfiltered, int k_min, float std_mul, bool keep_ordered);
-  bool checkMinSize(int cloud_size, int min_num_points, std::string task_name);
 
 };
 

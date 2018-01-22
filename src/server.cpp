@@ -8,7 +8,12 @@
 
 #include "pointcloud_processing_server/server.h"
 
-PointcloudProcessing::PointcloudProcessing()
+template class PointcloudProcessing<pcl::PointXYZ>;
+template class PointcloudProcessing<pcl::PointXYZI>;
+template class PointcloudProcessing<pcl::PointXYZRGB>;
+
+template <typename PointType> 
+PointcloudProcessing<PointType>::PointcloudProcessing()
 {
 //  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
 //    ros::console::notifyLoggerLevelsChanged();  
@@ -19,20 +24,22 @@ PointcloudProcessing::PointcloudProcessing()
 
   std::string service_name;
   nh_.param<std::string>("pointcloud_service_name", service_name, "pointcloud_service");
-  ros::ServiceServer object_pose_server = nh_.advertiseService(service_name, &PointcloudProcessing::pointcloud_service, this);
+  ros::ServiceServer object_pose_server = nh_.advertiseService(service_name, &PointcloudProcessing<PointType>::pointcloud_service, this);
   ROS_INFO_STREAM("PointcloudProcessing: Service " << service_name << " is up!");
 
   ros::spin();
 }
 
-bool PointcloudProcessing::getShutdownStatus()
+template <typename PointType> bool 
+PointcloudProcessing<PointType>::getShutdownStatus()
 {
   return should_shut_down;
 }
 
 // -------------------------------------------------------- START OF CALLBACK FUNCTION -------------------------------------------------------- 
 
-bool PointcloudProcessing::pointcloud_service(pointcloud_processing_server::pointcloud_process::Request &req, pointcloud_processing_server::pointcloud_process::Response &res)
+template <typename PointType> bool 
+PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server::pointcloud_process::Request &req, pointcloud_processing_server::pointcloud_process::Response &res)
 {
   ros::Time time_start_process = ros::Time::now();
 
@@ -192,7 +199,8 @@ Basic logical structure:
   4) On success, transforms the cloud input to transformed_cloud_pc2 (a sensor_msgs::PointCloud2), then creates INPUT_CLOUD_ from this message, then exits
   5) On failure, performs functionality from (2) above
 */
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::transformPointCloud(PCP &input_cloud_, std::string transform_to_frame, std::string starting_frame)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::transformPointCloud(PCP &input_cloud_, std::string transform_to_frame, std::string starting_frame)
 {
   ROS_DEBUG_STREAM("[PointcloudProcessing]   Transformation request received. Transforming cloud from " << starting_frame << " to " << transform_to_frame << ".");
   sensor_msgs::PointCloud2 input_pc2;
@@ -228,7 +236,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::trans
 /*
 Clip the pointcloud, currently just based on Maximum/Minimum values in X/Y/Z 
 - Considering moving to a different clipping method.    */
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipPointCloud(PCP &unclipped, std::vector<float> box_data, std::vector<float> box_pose, bool keep_ordered)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::clipPointCloud(PCP &unclipped, std::vector<float> box_data, std::vector<float> box_pose, bool keep_ordered)
 { 
   // Create input message
   sensor_msgs::PointCloud2 input_pc2;
@@ -239,7 +248,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipP
   pointcloud_processing_server::pointcloud_task_result task_result;
   task_result.input_pointcloud = input_pc2;
 
-  pcl::CropBox<PCLPoint> crop;
+  pcl::CropBox<PointType> crop;
   crop.setInputCloud(unclipped);
   // Set dimensions of clipping box:
   Eigen::Vector4f min_point = Eigen::Vector4f(box_data[0], box_data[2], box_data[4], 0);
@@ -285,7 +294,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipP
 /*
 Clip the pointcloud, currently just based on Maximum/Minimum values in X/Y/Z 
 - Considering moving to a different clipping method.    */
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipPointCloudConditional(PCP &unclipped, std::vector<float> ranges, bool keep_ordered)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::clipPointCloudConditional(PCP &unclipped, std::vector<float> ranges, bool keep_ordered)
 {
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input_cloud_, input_pc2);
@@ -297,22 +307,24 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipP
   // We must build a condition.
   // And "And" condition requires all tests to check true. "Or" conditions also available.
   // Checks available: GT, GE, LT, LE, EQ.
-  pcl::ConditionAnd<PCLPoint>::Ptr condition(new pcl::ConditionAnd<PCLPoint>);
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("x", pcl::ComparisonOps::GT, ranges[0])));
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("x", pcl::ComparisonOps::LT, ranges[1])));
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("y", pcl::ComparisonOps::GT, ranges[2])));
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("y", pcl::ComparisonOps::LT, ranges[3])));
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("z", pcl::ComparisonOps::GT, ranges[4])));
-  condition->addComparison(pcl::FieldComparison<PCLPoint>::ConstPtr(
-    new pcl::FieldComparison<PCLPoint>("z", pcl::ComparisonOps::LT, ranges[5])));
+  typedef typename pcl::ConditionAnd<PointType>::Ptr CondPtr;
+  typedef typename pcl::FieldComparison<PointType>::ConstPtr FldCompPtr;
+  CondPtr condition(new pcl::ConditionAnd<PointType>);
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("x", pcl::ComparisonOps::GT, ranges[0])));
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("x", pcl::ComparisonOps::LT, ranges[1])));
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("y", pcl::ComparisonOps::GT, ranges[2])));
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("y", pcl::ComparisonOps::LT, ranges[3])));
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("z", pcl::ComparisonOps::GT, ranges[4])));
+  condition->addComparison(FldCompPtr(
+    new pcl::FieldComparison<PointType>("z", pcl::ComparisonOps::LT, ranges[5])));
 
   // Create Filter (will remove points outside the Conditions defined above)
-  pcl::ConditionalRemoval<PCLPoint> filter;
+  pcl::ConditionalRemoval<PointType> filter;
   filter.setCondition(condition);
   filter.setInputCloud(unclipped); 
 
@@ -346,7 +358,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::clipP
 
 
   // -------------------------------- Voxelize Pointcloud --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size)
 {
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input_cloud_, input_pc2);
@@ -356,7 +369,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::voxel
   task_result.input_pointcloud = input_pc2;
 
   // Create the Filtering object: downsample the dataset
-  pcl::VoxelGrid<PCLPoint> vg;
+  pcl::VoxelGrid<PointType> vg;
   vg.setInputCloud(unvoxelized);
   vg.setLeafSize(float(voxel_leaf_size[0]), float(voxel_leaf_size[1]), float(voxel_leaf_size[2]));
   // Apply Filter and return Voxelized Data
@@ -376,7 +389,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::voxel
 } // -------------------------------- Voxelize Pointcloud --------------------------------
 
   // -------------------------------- Segment Toward Plane --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segmentTowardPlane(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::segmentTowardPlane(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud)
 {
 
   pointcloud_processing_server::pointcloud_task_result task_result;
@@ -393,7 +407,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
   pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
   // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZRGB> seg;
+  pcl::SACSegmentation<PointType> seg;
   // Optional
   seg.setOptimizeCoefficients (true);
   // Mandatory
@@ -417,7 +431,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
   }
 
   // Create object to Segment (extracting plane from the rest of the cloud)
-  pcl::ExtractIndices<PCLPoint> extract (true); 	// "Initializing with true will allow us to extract the removed indices" (ie, appending "(true)" after the variable name causes points to be REMOVED from the input cloud?)
+  pcl::ExtractIndices<PointType> extract (true); 	// "Initializing with true will allow us to extract the removed indices" (ie, appending "(true)" after the variable name causes points to be REMOVED from the input cloud?)
   extract.setInputCloud(input);
   extract.setIndices(inliers);
   extract.setNegative(false); 	// Remove points given by indices
@@ -459,7 +473,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
 
 
   // -------------------------------- Segment Toward Cylinder --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segmentTowardCylinder(PCP &input, int max_iterations, float threshold_distance, float max_radius, bool remove_cloud)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::segmentTowardCylinder(PCP &input, int max_iterations, float threshold_distance, float max_radius, bool remove_cloud)
 {
 
   pointcloud_processing_server::pointcloud_task_result task_result;
@@ -474,8 +489,9 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
   remaining_cloud->resize(0); 	// probably not necessary?
 
   ROS_DEBUG_STREAM("[PointcloudProcessing]   Estimating cloud normals...");
-  pcl::NormalEstimationOMP<PCLPoint, pcl::Normal> ne;
-  pcl::search::KdTree<PCLPoint>::Ptr tree (new pcl::search::KdTree<PCLPoint> ());
+  pcl::NormalEstimationOMP<PointType, pcl::Normal> ne;
+  typedef typename pcl::search::KdTree<PointType>::Ptr KdTreePtr;
+  KdTreePtr tree (new pcl::search::KdTree<PointType> ());
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
   ne.setSearchMethod (tree);
   ne.setInputCloud (input);
@@ -484,7 +500,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
 
   pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-  pcl::SACSegmentationFromNormals<PCLPoint, pcl::Normal> seg;
+  pcl::SACSegmentationFromNormals<PointType, pcl::Normal> seg;
 
   // Create the segmentation object for cylinder segmentation and set all the parameters
   seg.setOptimizeCoefficients (true);
@@ -512,7 +528,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
   }
 
   // Write the cylinder inliers to disk
-  pcl::ExtractIndices<PCLPoint> extract;
+  pcl::ExtractIndices<PointType> extract;
   extract.setInputCloud (input);
   extract.setIndices (inliers);
   extract.setNegative (false);
@@ -551,7 +567,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
 } // -------------------------------- Segment Toward Cylinder --------------------------------
 
   // -------------------------------- Segment Toward Line --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segmentTowardLine(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::segmentTowardLine(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud)
 {
   pointcloud_processing_server::pointcloud_task_result task_result;
   sensor_msgs::PointCloud2 input_pc2;
@@ -566,7 +583,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
 
   pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-  pcl::SACSegmentation<PCLPoint> seg;
+  pcl::SACSegmentation<PointType> seg;
 
   // Create the segmentation object for line segmentation and set all the parameters
   seg.setOptimizeCoefficients (true);
@@ -592,7 +609,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
   }
 
   // Write the line inliers to disk
-  pcl::ExtractIndices<PCLPoint> extract;
+  pcl::ExtractIndices<PointType> extract;
   extract.setInputCloud (input);
   extract.setIndices (inliers);
   extract.setNegative (false);
@@ -632,7 +649,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::segme
 
 
   // -------------------------------- Radius Outlier Removal --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::radiusOutlierFilter(PCP &unfiltered, float search_radius, int min_neighbors, bool keep_ordered)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::radiusOutlierFilter(PCP &unfiltered, float search_radius, int min_neighbors, bool keep_ordered)
 { 
   // Create input message
   sensor_msgs::PointCloud2 input_pc2;
@@ -643,7 +661,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::radiu
   pointcloud_processing_server::pointcloud_task_result task_result;
   task_result.input_pointcloud = input_pc2;
 
-  pcl::RadiusOutlierRemoval<PCLPoint> filter;
+  pcl::RadiusOutlierRemoval<PointType> filter;
   filter.setInputCloud(unfiltered);
   filter.setRadiusSearch(search_radius);
   filter.setMinNeighborsInRadius(min_neighbors);
@@ -664,7 +682,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::radiu
 } // -------------------------------- Radius Outlier Removal --------------------------------
 
   // -------------------------------- Statistical Outlier Removal --------------------------------
-pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::statisticalOutlierFilter(PCP &unfiltered, int k_min, float std_mul, bool keep_ordered)
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::statisticalOutlierFilter(PCP &unfiltered, int k_min, float std_mul, bool keep_ordered)
 { 
   // Create input message
   sensor_msgs::PointCloud2 input_pc2;
@@ -675,7 +694,7 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::stati
   pointcloud_processing_server::pointcloud_task_result task_result;
   task_result.input_pointcloud = input_pc2;
 
-  pcl::StatisticalOutlierRemoval<PCLPoint> filter;
+  pcl::StatisticalOutlierRemoval<PointType> filter;
   filter.setInputCloud(unfiltered);
   filter.setMeanK(k_min);
   filter.setStddevMulThresh(std_mul);
@@ -698,7 +717,8 @@ pointcloud_processing_server::pointcloud_task_result PointcloudProcessing::stati
 
   // -------------------------------- Check Min Size --------------------------------
 // Check to see if current cloud (with processing up until this point) is too small to continue
-bool PointcloudProcessing::checkMinSize(int cloud_size, int min_num_points, std::string task_name)
+template <typename PointType> bool 
+PointcloudProcessing<PointType>::checkMinSize(int cloud_size, int min_num_points, std::string task_name)
 {
   if(cloud_size <= min_num_points) 
   {
@@ -715,9 +735,20 @@ int main(int argc, char** argv)
 
   pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-  PointcloudProcessing server;
+  for(int i=0; i<argc+1; i++)
+    ROS_INFO_STREAM(argc << " " << argv[i]);
+
+  if( strcmp(argv[argc-1], "--intensity") )
+    PointcloudProcessing<pcl::PointXYZI> server;
+  else if( strcmp(argv[argc-1], "--color") )
+    PointcloudProcessing<pcl::PointXYZRGB> server;
+  else if( strcmp(argv[argc-1], "--xyz") )
+  {
+    ROS_WARN_STREAM("[PointcloudProcessing] Point type not specified! Defaulting to PointXYZ.");
+    PointcloudProcessing<pcl::PointXYZ> server;
+  }
   
-  while( !server.getShutdownStatus() && ros::ok() );
+  //while( !server.getShutdownStatus() && ros::ok() );
 
   return 0;
 }
