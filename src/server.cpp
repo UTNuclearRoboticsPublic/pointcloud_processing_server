@@ -361,6 +361,15 @@ PointcloudProcessing<PointType>::clipPointCloudConditional(PCP &unclipped, std::
 template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
 PointcloudProcessing<PointType>::voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size)
 {
+  if(typeid(PointType).name() == typeid(pcl::PointXYZI).name())
+    ROS_ERROR_STREAM("match");
+  else
+    ROS_ERROR_STREAM("mismatch!!!" << " " << typeid(PointType).name() << " " << typeid(pcl::PointXYZI).name());
+  if(typeid(PCP).name() == typeid(pcl::PointCloud<pcl::PointXYZI>::Ptr).name())
+    ROS_ERROR_STREAM("match2");
+  else
+    ROS_ERROR_STREAM("mismatch2!!!" << typeid(PCP).name() << " " << typeid(pcl::PointCloud<pcl::PointXYZI>::Ptr).name());
+
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input_cloud_, input_pc2);
   input_pc2.header.frame_id = current_cloud_frame_;
@@ -735,16 +744,24 @@ int main(int argc, char** argv)
 
   pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-  for(int i=0; i<argc+1; i++)
-    ROS_INFO_STREAM(argc << " " << argv[i]);
-
-  if( strcmp(argv[argc-1], "--intensity") )
-    PointcloudProcessing<pcl::PointXYZI> server;
-  else if( strcmp(argv[argc-1], "--color") )
-    PointcloudProcessing<pcl::PointXYZRGB> server;
-  else if( strcmp(argv[argc-1], "--xyz") )
+  if( !strcmp(argv[argc-1], "-intensity" ) )
   {
-    ROS_WARN_STREAM("[PointcloudProcessing] Point type not specified! Defaulting to PointXYZ.");
+    ROS_INFO_STREAM("[PointcloudProcessing] Initializing server using pcl::PointXYZI data type. (Argument " << argv[argc-1] << " selected).");
+    PointcloudProcessing<pcl::PointXYZI> server;
+  }
+  else if( !strcmp(argv[argc-1], "-color" ) )
+  {
+    ROS_INFO_STREAM("[PointcloudProcessing] Initializing server using pcl::PointXYZRGB data type. (Argument " << argv[argc-1] << " selected).");
+    PointcloudProcessing<pcl::PointXYZRGB> server;
+  }
+  else if( !strcmp(argv[argc-1], "-xyz" ) )
+  {
+    ROS_WARN_STREAM("[PointcloudProcessing] Initializing server using pcl::PointXYZ data type. (Argument " << argv[argc-1] << " selected).");
+    PointcloudProcessing<pcl::PointXYZ> server;
+  }
+  else
+  {
+    ROS_WARN_STREAM("[PointcloudProcessing] Point type not specified! Initializing server and defaulting to pcl::PointXYZ.");
     PointcloudProcessing<pcl::PointXYZ> server;
   }
   
