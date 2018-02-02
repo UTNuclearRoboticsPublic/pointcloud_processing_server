@@ -55,8 +55,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
 
   current_cloud_frame_ = req.pointcloud.header.frame_id;
 
-  for (int i=0; i<8; i++)
-    task_counts_[i] = 0;
   for (int i=0; i<req.tasks.size(); i++)
   {
     ros::Time time_start = ros::Time::now();
@@ -78,7 +76,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
           res.task_results.push_back( transformPointCloud(input_cloud_, req.tasks[i].str_parameters[0], req.pointcloud.header.frame_id) );
         else        // Otherwise, transform from frame of pointcloud output of last process 
           res.task_results.push_back( transformPointCloud(input_cloud_, req.tasks[i].str_parameters[0], res.task_results[i-1].task_pointcloud.header.frame_id) );
-        task_counts_[1]++;
         cloud_size = input_cloud_->points.size();
         break;
       }
@@ -94,7 +91,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Box Pose:       " << box_pose[0] << " " << box_pose[1] << " " << box_pose[2] << " " << box_pose[3] << " " << box_pose[4] << " " << box_pose[5]);
         res.task_results.push_back( clipPointCloud(input_cloud_, box_data, box_pose, req.tasks[i].keep_ordered) );
         cloud_size = input_cloud_->points.size();
-        task_counts_[2]++; 
         break;
       }
       // ----------- Clip PointCloud (Conditional) -----------
@@ -104,7 +100,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         std::vector<float> box_data(&req.tasks[i].parameters[0],&req.tasks[i].parameters[6]);
         res.task_results.push_back( clipPointCloudConditional(input_cloud_, box_data, req.tasks[i].keep_ordered) );
         cloud_size = input_cloud_->points.size();
-        task_counts_[3]++; 
         break;
       }
 
@@ -113,13 +108,11 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Voxel Leaf Sizes: " << req.tasks[i].parameters[0] << " " << req.tasks[i].parameters[1] << " " << req.tasks[i].parameters[2]);
         res.task_results.push_back( voxelizePointCloud(input_cloud_, req.tasks[i].parameters) );
         cloud_size = input_cloud_->points.size();
-        task_counts_[4]++;
         break;
 
       // ----------- Plane Segmentation -----------
       case 5:
         res.task_results.push_back(segmentTowardPlane(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].remove_cloud));
-        task_counts_[5]++;
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
         {
@@ -132,7 +125,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
       // ----------- Cylinder Segmentation -----------
       case 6:
         res.task_results.push_back(segmentTowardCylinder(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].parameters[2], req.tasks[i].remove_cloud));
-        task_counts_[6]++;
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
         {
@@ -145,7 +137,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
       // ----------- Line Segmentation -----------
       case 7:
         res.task_results.push_back(segmentTowardLine(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].remove_cloud));
-        task_counts_[7]++;
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
         {
@@ -161,7 +152,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Search radius: " << req.tasks[i].parameters[0] << "  Min Neighbors: " << req.tasks[i].parameters[1]);
         res.task_results.push_back( radiusOutlierFilter(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].keep_ordered) );
         cloud_size = input_cloud_->points.size();
-        task_counts_[8]++; 
         break;
       }
 
@@ -171,7 +161,6 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Min K: " << req.tasks[i].parameters[0] << "  Stdev Mult: " << req.tasks[i].parameters[1]);
         res.task_results.push_back( statisticalOutlierFilter(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].keep_ordered) );
         cloud_size = input_cloud_->points.size();
-        task_counts_[9]++; 
         break;
       }
 
@@ -405,6 +394,7 @@ PointcloudProcessing<PointType>::segmentTowardPlane(PCP &input, int max_iteratio
   pointcloud_processing_server::pointcloud_task_result task_result;
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input, input_pc2);
+  input_pc2.header.frame_id = current_cloud_frame_;
   task_result.input_pointcloud = input_pc2;
 
   // Starting cloud (populated later via Filter):
@@ -459,19 +449,35 @@ PointcloudProcessing<PointType>::segmentTowardPlane(PCP &input, int max_iteratio
   // Create Messages
   if(task_result.primitive_found)
   {
+    // Output cloud for found primitive
     sensor_msgs::PointCloud2 plane_pc2;
-    sensor_msgs::PointCloud2 remaining_pc2;
     pcl::toROSMsg(*plane_cloud, plane_pc2);
-    pcl::toROSMsg(*remaining_cloud, remaining_pc2);
     plane_pc2.header.frame_id = current_cloud_frame_;
-    remaining_pc2.header.frame_id = current_cloud_frame_;
-
     task_result.task_pointcloud = plane_pc2;
+    
+    // Output cloud for remainder
+    sensor_msgs::PointCloud2 remaining_pc2;
+    pcl::toROSMsg(*remaining_cloud, remaining_pc2);
+    remaining_pc2.header.frame_id = current_cloud_frame_;
     task_result.remaining_pointcloud = remaining_pc2;
+
+    // Output primitive coefficients
     for (int i=0; i < coefficients->values.size(); i++)
     {
       task_result.primitive_coefficients.push_back(coefficients->values[i]);
       ROS_DEBUG_STREAM("[PointcloudProcessing]   Plane Coefficient " << i << ": " << coefficients->values[i]);
+    }
+  }
+  else    // Actually not sure if this is necessary? This might be the default behavior of the filter when it fails to segment an object
+  {
+    ROS_ERROR_STREAM("[PointcloudProcessing]   Failed to find a plane within the search cloud.");
+    sensor_msgs::PointCloud2 empty_cloud;
+    empty_cloud.header.frame_id = current_cloud_frame_;
+    task_result.task_pointcloud = empty_cloud;            // In failure, return an empty cloud for primitive
+    task_result.remaining_pointcloud = input_pc2;         // In failure, return starting cloud for remainder
+    for (int i=0; i < coefficients->values.size(); i++)
+    {
+      task_result.primitive_coefficients.push_back(-1);   // Failure value --> all coefficients = -1
     }
   }
   ROS_DEBUG_STREAM("[PointcloudProcessing]   Returning process after searching for cloud.");
@@ -554,20 +560,36 @@ PointcloudProcessing<PointType>::segmentTowardCylinder(PCP &input, int max_itera
 
   if(task_result.primitive_found)
   {
-    // Create Messages
+    // Output cylinder cloud
     sensor_msgs::PointCloud2 cylinder_pc2;
-    sensor_msgs::PointCloud2 remaining_pc2;
     pcl::toROSMsg(*cylinder_cloud, cylinder_pc2);
     cylinder_pc2.header.frame_id = current_cloud_frame_;
+    task_result.task_pointcloud = cylinder_pc2;
+    // Output remainder cloud
+    sensor_msgs::PointCloud2 remaining_pc2;
     pcl::toROSMsg(*remaining_cloud, remaining_pc2);
     remaining_pc2.header.frame_id = current_cloud_frame_;
-
-    task_result.task_pointcloud = cylinder_pc2;
     task_result.remaining_pointcloud = remaining_pc2;
+    // Output cylinder coefficients
     for (int i=0; i < coefficients->values.size(); i++)
     {
       task_result.primitive_coefficients.push_back(coefficients->values[i]);
       ROS_DEBUG_STREAM("[PointcloudProcessing]   Cylinder Coefficient " << i << ": " << coefficients->values[i]);
+    }
+  }
+  else    // Actually not sure if this is necessary? This might be the default behavior of the filter when it fails to segment an object
+  {
+    ROS_ERROR_STREAM("[PointcloudProcessing]   Failed to find a cylinder within the search cloud.");
+    // In failure, return an empty cloud for primitive
+    sensor_msgs::PointCloud2 empty_cloud;
+    empty_cloud.header.frame_id = current_cloud_frame_;
+    task_result.task_pointcloud = empty_cloud;            
+    // In failure, return starting cloud for remainder
+    task_result.remaining_pointcloud = input_pc2;         
+    // Failure value --> all coefficients = -1
+    for (int i=0; i < coefficients->values.size(); i++)
+    {
+      task_result.primitive_coefficients.push_back(-1);   
     }
   }
   ROS_DEBUG_STREAM("[PointcloudProcessing]   Returning process after searching for cloud.");
@@ -635,20 +657,36 @@ PointcloudProcessing<PointType>::segmentTowardLine(PCP &input, int max_iteration
 
   if(task_result.primitive_found)
   {
-    // Create Messages
+    // Output line cloud
     sensor_msgs::PointCloud2 line_pc2;
-    sensor_msgs::PointCloud2 remaining_pc2;
     pcl::toROSMsg(*line_cloud, line_pc2);
     line_pc2.header.frame_id = current_cloud_frame_;
+    task_result.task_pointcloud = line_pc2;
+    // Output remainder cloud
+    sensor_msgs::PointCloud2 remaining_pc2;
     pcl::toROSMsg(*remaining_cloud, remaining_pc2);
     remaining_pc2.header.frame_id = current_cloud_frame_;
-
-    task_result.task_pointcloud = line_pc2;
     task_result.remaining_pointcloud = remaining_pc2;
+    // Output line coefficients
     for (int i=0; i < coefficients->values.size(); i++)
     {
       task_result.primitive_coefficients.push_back(coefficients->values[i]);
       ROS_DEBUG_STREAM("[PointcloudProcessing]   Line Coefficient " << i << ": " << coefficients->values[i]);
+    }
+  }
+  else    // Actually not sure if this is necessary? This might be the default behavior of the filter when it fails to segment an object
+  {
+    ROS_ERROR_STREAM("[PointcloudProcessing]   Failed to find a line within the search cloud.");
+    // In failure, return an empty cloud for primitive
+    sensor_msgs::PointCloud2 empty_cloud;
+    empty_cloud.header.frame_id = current_cloud_frame_;
+    task_result.task_pointcloud = empty_cloud;            
+    // In failure, return starting cloud for remainder
+    task_result.remaining_pointcloud = input_pc2;         
+    // Failure value --> all coefficients = -1
+    for (int i=0; i < coefficients->values.size(); i++)
+    {
+      task_result.primitive_coefficients.push_back(-1);   
     }
   }
   ROS_DEBUG_STREAM("[PointcloudProcessing]   Returning process after searching for cloud.");
@@ -670,13 +708,13 @@ PointcloudProcessing<PointType>::radiusOutlierFilter(PCP &unfiltered, float sear
   pointcloud_processing_server::pointcloud_task_result task_result;
   task_result.input_pointcloud = input_pc2;
 
+  // Construct filter
   pcl::RadiusOutlierRemoval<PointType> filter;
   filter.setInputCloud(unfiltered);
   filter.setRadiusSearch(search_radius);
   filter.setMinNeighborsInRadius(min_neighbors);
-
   filter.setKeepOrganized(false);
-
+  // Perform filtering
   filter.filter(*input_cloud_);
 
   // Create output message
@@ -703,13 +741,13 @@ PointcloudProcessing<PointType>::statisticalOutlierFilter(PCP &unfiltered, int k
   pointcloud_processing_server::pointcloud_task_result task_result;
   task_result.input_pointcloud = input_pc2;
 
+  // Construct filter
   pcl::StatisticalOutlierRemoval<PointType> filter;
   filter.setInputCloud(unfiltered);
   filter.setMeanK(k_min);
   filter.setStddevMulThresh(std_mul);
-
   filter.setKeepOrganized(false);
-
+  // Perform filtering
   filter.filter(*input_cloud_);
 
   // Create output message

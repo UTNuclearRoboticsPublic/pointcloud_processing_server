@@ -78,8 +78,6 @@ protected:
   int segmentation_distance_threshold; 
   bool should_shut_down;
 
-  int task_counts_[8];              // For some reason decided to make indices start at 1, not 0. 
-
 };
 
 #endif //POINTCLOUD_PROCESSING_H
