@@ -167,7 +167,7 @@ namespace PointcloudUtilities
    -------------------------------------------------------------------------------------------------------------
     Searches an input PointCloud2 for a list of input primitives with particular coefficients.
         Currently, supports planes and cylinders
-        Requires that search order be specified, but checks each primitive of each time against the corresponding outputs...
+        Requires that search order be specified, but checks each primitive of each type against the corresponding outputs...
             IE, if we specify: plane, plane, cylinder, cylinder
             Searches for a plane first, but compares output against both target planes
             Will then search for cylinders only once both planes are found 

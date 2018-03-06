@@ -24,7 +24,7 @@ PointcloudProcessing<PointType>::PointcloudProcessing()
 
   std::string service_name;
   nh_.param<std::string>("pointcloud_service_name", service_name, "pointcloud_service");
-  ros::ServiceServer object_pose_server = nh_.advertiseService(service_name, &PointcloudProcessing<PointType>::pointcloud_service, this);
+  ros::ServiceServer service_server = nh_.advertiseService(service_name, &PointcloudProcessing<PointType>::pointcloud_service, this);
   ROS_INFO_STREAM("PointcloudProcessing: Service " << service_name << " is up!");
 
   ros::spin();
