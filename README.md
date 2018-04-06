@@ -8,7 +8,7 @@
 ## About 
 Server which performs basic processing of pointclouds using PCL - filtering, clipping, transformations, voxelizations, segmentations. This is essentially a convenient ROS wrapper for the [Point Cloud Library](http://pointclouds.org/) - or maybe, an extension of the existing in-core ROS PCL wrapping. The aim is just to make usage more convenient and easily accessible even for people with no background in pointcloud operations by creating a very user-friendly, modular, and easily-modified interface. As well, because this system is managed solely through topics and services, it is language-agnostic from the client perspective and can be used either in C++ or Python. 
 
-The user creates a pointcloud_process - a ROS service object which contains a list of pointcloud_task. Each individual pcl_task corresponds to a single operation on a pointcloud. When the server is fed the pointcloud_process it executes the list of pointcloud_tasks in order on the input cloud and publishes and returns the various outputs, depending on the parameter specifications. Generally, the user should not have to interface directly with the pointcloud_process or pointcloud_task types, because they can be initialized using custom yaml file layouts.
+The user creates a pointcloud_process - a ROS service object which contains a list of pointcloud_task. Each individual pointcloud_task corresponds to a single operation on a pointcloud. When the server is fed the pointcloud_process it executes the list of pointcloud_tasks in order on the input cloud and publishes and returns the various outputs, depending on the parameter specifications. Generally, the user should not have to interface directly with the pointcloud_process or pointcloud_task types, because they can be initialized using custom yaml file layouts.
 
 ## Parameter Setup
 pointcloud_process service objects are initialized based on yaml files stored in param/pointcloud_process_from_yaml. These yaml files themselves contain lists of task specifications. The list is preceded by the following two parameters
@@ -18,7 +18,7 @@ pointcloud_process service objects are initialized based on yaml files stored in
 Next, each individual task is specified, nested under its name. The format varies across different kinds of processes, so I've explained them each separately below. 
 
 ### Transform Tasks
-This kind of task allows transformation of the cloud from one frame to another. It is not a rotation or translation of the cloud - it just alters to cloud coordinates so that they can be expressed in the new frame, given that the existing frame and new frame are correctly specified in the same TF tree. 
+This kind of task allows transformation of the cloud from one frame to another. It is not a rotation or translation of the cloud - it just alters to cloud coordinates so that they can be expressed in the new frame, given that the existing frame and new frame are correctly specified in the same TF tree. Point locations in the global frame will be unchanged, just expressed in a new local frame. 
 - type: 1
 - map_name: the name of the frame the cloud should be transformed TO (the FROM frame is already in the sensor_msgs/PointCloud2 input)
 - should_publish: should the output transformed cloud be published
@@ -33,7 +33,7 @@ This allows clipping of the cloud to include only those points INSIDE a cuboid o
   - translation of the cuboid: x, y, z
   - rotation of the cuboid: yaw, pitch, roll
   - note that specifying the last 6 parameters as 0 will give a cuboid centered on the origin, oriented to the parent coordinate frame
-- keep_ordered: should the cloud be kept ordered, if it was started out ordered? This should probably be false
+- keep_ordered: should the cloud be kept ordered, if it started out ordered? This should probably be false
 - should_publish: should the output clipped cloud be published
 - publish_topic: the name of the topic to publish the output cloud to, if it should be published
 
@@ -41,7 +41,7 @@ This allows clipping of the cloud to include only those points INSIDE a cuboid o
 This is an older implementation from before I set up the cropbox solution. It also crops the cloud by a cuboid, but requries that the cuboid be centered on the origin and unrotated from the parent frame. This task is redundant with the Cropbox task and I might remove it later. 
 - type: 3
 - box: size of the cuboid in +x, -x, +y, -y, +z, -z 
-- keep_ordered: should the cloud be kept ordered, if it was started out ordered? This should probably be false
+- keep_ordered: should the cloud be kept ordered, if it started out ordered? This should probably be false
 - should_publish: should the output clipped cloud be published
 - publish_topic: the name of the topic to publish the output cloud to, if it should be published
 
@@ -49,7 +49,7 @@ This is an older implementation from before I set up the cropbox solution. It al
 Voxelization is a downsampling process in which the cloud is broken up into a rectangular grid, and only one point is kept within each grid cell. The lengths in XYZ of the cells can be specified separately (leaf sizes). When multiple points co-occur in a box, they are replaced with their positional centroid. 
 - type: 4
 - leaf_size: side-lengths of each grid cell, in x, y, z
-- keep_ordered: should the cloud be kept ordered, if it was started out ordered? This should probably be false
+- keep_ordered: should the cloud be kept ordered, if it started out ordered? This should probably be false
 - should_publish: should the output voxelized cloud be published
 - publish_topic: the name of the topic to publish the output cloud to, if it should be published
 
@@ -93,7 +93,7 @@ A filter which removes points which do not have a certain minimum number of neig
 - type: 8
 - search_radius: window in which to look for neighbors
 - min_neighbors: the required number of neighbors to persist following the filter
-- keep_ordered: should the cloud be kept ordered, if it was started out ordered? This should probably be false
+- keep_ordered: should the cloud be kept ordered, if it started out ordered? This should probably be false
 - should_publish: should the output line transformed cloud be published
 - publish_topic: the name of the topic to publish the output cloud to, if it should be published
 
@@ -102,7 +102,7 @@ A filter which removes points that qualify as statistical outliers versus the re
 - type: 8
 - k_min: probably something to do with a number of neighbors? been a while since I looked this up or used it :)
 - std_mul: yeah don't remember this one at all! coming back to this...
-- keep_ordered: should the cloud be kept ordered, if it was started out ordered? This should probably be false
+- keep_ordered: should the cloud be kept ordered, if it started out ordered? This should probably be false
 - should_publish: should the output line transformed cloud be published
 - publish_topic: the name of the topic to publish the output cloud to, if it should be published
 
