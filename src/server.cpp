@@ -15,8 +15,8 @@ template class PointcloudProcessing<pcl::PointXYZRGB>;
 template <typename PointType> 
 PointcloudProcessing<PointType>::PointcloudProcessing()
 {
-//  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
-//    ros::console::notifyLoggerLevelsChanged();  
+  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
+    ros::console::notifyLoggerLevelsChanged();  
 
   should_shut_down = false;
   // this needs to be modified! 
@@ -70,7 +70,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
 
     switch(req.tasks[i].type_ind){    
       // -------------- PointCloud TF Transform --------------
-      case 1:
+      case pointcloud_processing_server::pointcloud_task::TRANSFORM_TASK:
       {
         if(i==0)    // If the first task, transform from original input pointcloud frame 
           res.task_results.push_back( transformPointCloud(input_cloud_, req.tasks[i].str_parameters[0], req.pointcloud.header.frame_id) );
@@ -80,7 +80,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         break;
       }
       // ----------- Clip PointCloud -----------
-      case 2:
+      case pointcloud_processing_server::pointcloud_task::CLIPPING_TASK:
       {
         std::vector<float> box_data(&req.tasks[i].parameters[0],&req.tasks[i].parameters[6]);
         std::vector<float> box_pose(&req.tasks[i].parameters[6],&req.tasks[i].parameters[12]);
@@ -93,25 +93,16 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         cloud_size = input_cloud_->points.size();
         break;
       }
-      // ----------- Clip PointCloud (Conditional) -----------
-      case 3:
-      {
-        ROS_DEBUG_STREAM("[PointcloudProcessing]   Box Dimensions: " << req.tasks[i].parameters[0] << " " << req.tasks[i].parameters[1] << " " << req.tasks[i].parameters[2] << " " << req.tasks[i].parameters[3] << " " << req.tasks[i].parameters[4] << " " << req.tasks[i].parameters[5]);
-        std::vector<float> box_data(&req.tasks[i].parameters[0],&req.tasks[i].parameters[6]);
-        res.task_results.push_back( clipPointCloudConditional(input_cloud_, box_data, req.tasks[i].keep_ordered) );
-        cloud_size = input_cloud_->points.size();
-        break;
-      }
 
       // ----------- Voxelize PointCloud -----------
-      case 4:
+      case pointcloud_processing_server::pointcloud_task::VOXELIZING_TASK:
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Voxel Leaf Sizes: " << req.tasks[i].parameters[0] << " " << req.tasks[i].parameters[1] << " " << req.tasks[i].parameters[2]);
         res.task_results.push_back( voxelizePointCloud(input_cloud_, req.tasks[i].parameters) );
         cloud_size = input_cloud_->points.size();
         break;
 
       // ----------- Plane Segmentation -----------
-      case 5:
+      case pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK:
         res.task_results.push_back(segmentTowardPlane(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].remove_cloud));
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
@@ -123,7 +114,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         break;
 
       // ----------- Cylinder Segmentation -----------
-      case 6:
+      case pointcloud_processing_server::pointcloud_task::CYLINDER_SEG_TASK:
         res.task_results.push_back(segmentTowardCylinder(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].parameters[2], req.tasks[i].remove_cloud));
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
@@ -135,7 +126,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         break;
 
       // ----------- Line Segmentation -----------
-      case 7:
+      case pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK:
         res.task_results.push_back(segmentTowardLine(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].remove_cloud));
         cloud_size = input_cloud_->points.size();
         if(!res.task_results[i].primitive_found)
@@ -147,7 +138,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
         break;
 
       // ----------- Radius Filter -----------
-      case 8:
+      case pointcloud_processing_server::pointcloud_task::RADIUS_FILTER_TASK:
       {
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Search radius: " << req.tasks[i].parameters[0] << "  Min Neighbors: " << req.tasks[i].parameters[1]);
         res.task_results.push_back( radiusOutlierFilter(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].keep_ordered) );
@@ -156,7 +147,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
       }
 
       // ----------- Statistical Filter -----------
-      case 9:
+      case pointcloud_processing_server::pointcloud_task::STATISTICAL_FILTER_TASK:
       {
         ROS_DEBUG_STREAM("[PointcloudProcessing]   Min K: " << req.tasks[i].parameters[0] << "  Stdev Mult: " << req.tasks[i].parameters[1]);
         res.task_results.push_back( statisticalOutlierFilter(input_cloud_, req.tasks[i].parameters[0], req.tasks[i].parameters[1], req.tasks[i].keep_ordered) );
@@ -223,8 +214,9 @@ PointcloudProcessing<PointType>::transformPointCloud(PCP &input_cloud_, std::str
 
   // -------------------------------- Clip Pointcloud --------------------------------
 /*
-Clip the pointcloud, currently just based on Maximum/Minimum values in X/Y/Z 
-- Considering moving to a different clipping method.    */
+Clip the pointcloud, using a box with arbitrary dimensions and pose. 
+
+*/
 template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
 PointcloudProcessing<PointType>::clipPointCloud(PCP &unclipped, std::vector<float> box_data, std::vector<float> box_pose, bool keep_ordered)
 { 
@@ -279,86 +271,10 @@ PointcloudProcessing<PointType>::clipPointCloud(PCP &unclipped, std::vector<floa
 } // -------------------------------- Clip Pointcloud --------------------------------
 
 
-  // -------------------------------- Clip Pointcloud Conditional --------------------------------
-/*
-Clip the pointcloud, currently just based on Maximum/Minimum values in X/Y/Z 
-- Considering moving to a different clipping method.    */
-template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
-PointcloudProcessing<PointType>::clipPointCloudConditional(PCP &unclipped, std::vector<float> ranges, bool keep_ordered)
-{
-  sensor_msgs::PointCloud2 input_pc2;
-  pcl::toROSMsg(*input_cloud_, input_pc2);
-  input_pc2.header.frame_id = current_cloud_frame_;
-
-  pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
-
-  // We must build a condition.
-  // And "And" condition requires all tests to check true. "Or" conditions also available.
-  // Checks available: GT, GE, LT, LE, EQ.
-  typedef typename pcl::ConditionAnd<PointType>::Ptr CondPtr;
-  typedef typename pcl::FieldComparison<PointType>::ConstPtr FldCompPtr;
-  CondPtr condition(new pcl::ConditionAnd<PointType>);
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("x", pcl::ComparisonOps::GT, ranges[0])));
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("x", pcl::ComparisonOps::LT, ranges[1])));
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("y", pcl::ComparisonOps::GT, ranges[2])));
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("y", pcl::ComparisonOps::LT, ranges[3])));
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("z", pcl::ComparisonOps::GT, ranges[4])));
-  condition->addComparison(FldCompPtr(
-    new pcl::FieldComparison<PointType>("z", pcl::ComparisonOps::LT, ranges[5])));
-
-  // Create Filter (will remove points outside the Conditions defined above)
-  pcl::ConditionalRemoval<PointType> filter;
-  filter.setCondition(condition);
-  filter.setInputCloud(unclipped); 
-
-  if(keep_ordered)
-  {
-  /*If true, points that do not pass the filter will be set to a certain value (default NaN).
-    If false, they will be just removed, but that could break the structure of the cloud.     */
-    filter.setKeepOrganized(true);    /*
-    Organized clouds are clouds taken from camera-like sensors that return a matrix-like image
-    If keep organized was set true, points that failed the test will have their Z value set to the following:   */
-    filter.setUserFilterValue(0.0);
-  }
-  else 
-    filter.setKeepOrganized(false);
-
-  // Apply Filter
-  PCP temp_pcp = PCP(new PC());
-  filter.filter(*temp_pcp);
-  input_cloud_ = temp_pcp;
-
-  sensor_msgs::PointCloud2 output_pc2;
-  pcl::toROSMsg(*input_cloud_, output_pc2);
-  output_pc2.header.frame_id = current_cloud_frame_;
-
-  task_result.task_pointcloud = output_pc2;
-
-  return task_result;
-
-} // -------------------------------- Clip Pointcloud Conditional --------------------------------
-
-
-
   // -------------------------------- Voxelize Pointcloud --------------------------------
 template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
 PointcloudProcessing<PointType>::voxelizePointCloud(PCP &unvoxelized, std::vector<float> voxel_leaf_size)
 {
-  if(typeid(PointType).name() == typeid(pcl::PointXYZI).name())
-    ROS_ERROR_STREAM("match");
-  else
-    ROS_ERROR_STREAM("mismatch!!!" << " " << typeid(PointType).name() << " " << typeid(pcl::PointXYZI).name());
-  if(typeid(PCP).name() == typeid(pcl::PointCloud<pcl::PointXYZI>::Ptr).name())
-    ROS_ERROR_STREAM("match2");
-  else
-    ROS_ERROR_STREAM("mismatch2!!!" << typeid(PCP).name() << " " << typeid(pcl::PointCloud<pcl::PointXYZI>::Ptr).name());
-
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input_cloud_, input_pc2);
   input_pc2.header.frame_id = current_cloud_frame_;

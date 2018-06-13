@@ -17,27 +17,27 @@ pointcloud_process:
         should_publish:   true
         publish_topic:    clipped_cloud
       voxelize:           
-        type:             4     # Voxelization
+        type:             2     # Voxelization
         leaf_sizes:       [ 0.005, 0.005, 0.005 ]
         keep_ordered:     false
         should_publish:   true
         publish_topic:    voxelized_cloud
       radius_filter:
-        type:             8
+        type:             7
         search_radius:    0.02
         min_neighbors:    10
         keep_ordered:     false
         should_publish:   true
         publish_topic:    radius_filtered_cloud
       statistical_filter:
-        type:             9
+        type:             8
         k_min:            50 
         std_mul:          0.1
         keep_ordered:     true
         should_publish:   true
         publish_topic:    statistical_filtered_cloud
       plane_seg:
-        type:             5     # Planar Segmentation
+        type:             4     # Planar Segmentation
         max_iterations:   250
         dist_threshold:   0.007
         should_publish:   true
@@ -46,7 +46,7 @@ pointcloud_process:
         publish_topic_r:  planeless_cloud
         remove_cloud:     true
       plane_seg2:
-        type:             5     # Planar Segmentation
+        type:             4     # Planar Segmentation
         max_iterations:   250
         dist_threshold:   0.007
         should_publish:   true
@@ -55,7 +55,7 @@ pointcloud_process:
         publish_topic_r:  planeless_cloud2
         remove_cloud:     true
       plane_seg3:
-        type:             5     # Planar Segmentation
+        type:             4     # Planar Segmentation
         max_iterations:   250
         dist_threshold:   0.007
         should_publish:   true
@@ -64,7 +64,7 @@ pointcloud_process:
         publish_topic_r:  planeless_cloud3
         remove_cloud:     true
       cylinder_seg:
-        type:             6     # Cylinder Segmentation
+        type:             5     # Cylinder Segmentation
         max_iterations:   250
         dist_threshold:   0.02
         should_publish:   true
@@ -74,7 +74,7 @@ pointcloud_process:
         remove_cloud:     true
         max_radius:       0.15       # meters
       cylinder_seg2:  
-        type:             6     # Cylinder Segmentation
+        type:             5     # Cylinder Segmentation
         max_iterations:   250
         dist_threshold:   0.02
         should_publish:   true

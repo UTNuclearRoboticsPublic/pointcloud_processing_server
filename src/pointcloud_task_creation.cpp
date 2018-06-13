@@ -133,8 +133,8 @@ namespace PointcloudTaskCreation
 	// Creates a pointcloud_process object from a YAML file template
 	bool processFromYAML(pointcloud_processing_server::pointcloud_process *process, std::string yaml_file_name, std::string prefix)
 	{ 
-//		if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
-  //  ros::console::notifyLoggerLevelsChanged();  
+		if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
+    ros::console::notifyLoggerLevelsChanged();  
 		ros::NodeHandle nh;
 		ROS_DEBUG_STREAM("[PointcloudTaskCreation] Beginning to attempt to initialize parameters from server for process " + yaml_file_name + ".");
 		std::vector<std::string> task_list;
@@ -151,16 +151,44 @@ namespace PointcloudTaskCreation
 		std::vector<float> temp_float_vector;
 		for (int i=0; i<task_list.size(); i++)
 		{ 
-			int task_type;
+			std::string task_type_str;
 			pointcloud_processing_server::pointcloud_task task;
+			// Capture task type from parameter (either as integer code or string)
 			if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/type", task.type_ind) )
-			{
-				ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get task type for task " << task_list[i] << "." );
-				return false;
-			} 
+				if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/type", task_type_str) )
+				{
+					ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get task type for task " << task_list[i] << ", either as a string name or int code." );
+					return false;
+				} 
+				else 		// Allow for task specification as a string from the following list:
+				{
+					ROS_DEBUG_STREAM("[PointcloudTaskCreation] Type for task " << task_list[i] << " retrieved as a string, with value " << task_type_str);
+					if(task_type_str.compare("transform")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::TRANSFORM_TASK;
+					else if(task_type_str.compare("clipping")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::CLIPPING_TASK;
+					else if(task_type_str.compare("voxelizing")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::VOXELIZING_TASK;
+					else if(task_type_str.compare("plane_seg")==0 || task_type_str.compare("plane_segmentation")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK;
+					else if(task_type_str.compare("cylinder_seg")==0 || task_type_str.compare("cylinder_segmentation")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::CYLINDER_SEG_TASK;
+					else if(task_type_str.compare("line_seg")==0 || task_type_str.compare("line_segmentation")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK;
+					else if(task_type_str.compare("radius_filter")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::RADIUS_FILTER_TASK;
+					else if(task_type_str.compare("statistical_filter")==0)
+						task.type_ind = pointcloud_processing_server::pointcloud_task::STATISTICAL_FILTER_TASK;
+					else 
+					{
+						ROS_ERROR_STREAM("[PointcloudTaskCreation] Task type for task " << task_list[i] << " was specified as string " << task_type_str << " which is not from the accepted list. Returning as failed...");
+						return false;
+					}
+				}
+			ROS_DEBUG_STREAM("[PointcloudTaskCreation] Successfully retrieved task type for task " << task_list[i] << " as " << task.type_ind);	
 			switch(task.type_ind)
 			{
-				case 1: 		// Transformation
+				case pointcloud_processing_server::pointcloud_task::TRANSFORM_TASK: 		// Transformation
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/map_name", temp_string) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /map_name for transform, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -168,7 +196,7 @@ namespace PointcloudTaskCreation
 					} 
 					task.str_parameters.push_back(temp_string);
 					break;
-				case 2:			// Clipping 
+				case pointcloud_processing_server::pointcloud_task::CLIPPING_TASK:			// Clipping 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/box", task.parameters) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /box for clipping, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -181,20 +209,7 @@ namespace PointcloudTaskCreation
 					}
 					task.keep_ordered = temp_bool;					
 					break;
-				case 3:			// Clipping (Conditional)
-					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/box", task.parameters) )
-					{
-						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /box for clipping, in " << task_list[i] << " task of process " << yaml_file_name << "." );
-						return false;
-					}
-					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/keep_ordered", temp_bool) )
-					{
-						ROS_WARN_STREAM("[PointcloudTaskCreation] Failed to get /keep_ordered for clipping, in " << task_list[i] << " task of process " << yaml_file_name << ". Defaulting to true." );
-						temp_bool = true;
-					}
-					task.keep_ordered = temp_bool;
-					break;
-				case 4:			// Voxelization 
+				case pointcloud_processing_server::pointcloud_task::VOXELIZING_TASK:			// Voxelization 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/leaf_sizes", task.parameters) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /leaf_sizes for voxelization, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -206,7 +221,7 @@ namespace PointcloudTaskCreation
 						temp_bool = true;
 					}
 					break;
-				case 5:			// Planar Segmentation 
+				case pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK:			// Planar Segmentation 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/max_iterations", temp_float) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /max_iterations for plane_segmentation, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -236,7 +251,7 @@ namespace PointcloudTaskCreation
 					else 
 						task.remove_cloud = temp_bool;
 					break;
-				case 6:			// Planar Segmentation 
+				case pointcloud_processing_server::pointcloud_task::CYLINDER_SEG_TASK:			// Planar Segmentation 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/max_iterations", temp_float) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /max_iterations for cylinder_segmentation, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -272,7 +287,7 @@ namespace PointcloudTaskCreation
 					else 
 						task.remove_cloud = temp_bool;
 					break;
-				case 7:			// Line Segmentation 
+				case pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK:			// Line Segmentation 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/max_iterations", temp_float) )
 					{
 						ROS_ERROR_STREAM("[PointcloudTaskCreation] Failed to get /max_iterations for line_segmentation, in " << task_list[i] << " task of process " << yaml_file_name << "." );
@@ -301,7 +316,7 @@ namespace PointcloudTaskCreation
 					else 
 						task.remove_cloud = temp_bool;
 					break;
-				case 8:			// Radius Filter 
+				case pointcloud_processing_server::pointcloud_task::RADIUS_FILTER_TASK:			// Radius Filter 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/search_radius", temp_float) )
 					{
 						task.parameters.push_back(0.02);
@@ -323,7 +338,7 @@ namespace PointcloudTaskCreation
 					}
 					task.keep_ordered = temp_bool;					
 					break;
-				case 9:			// Statistical Filter 
+				case pointcloud_processing_server::pointcloud_task::STATISTICAL_FILTER_TASK:			// Statistical Filter 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/k_min", temp_float) )
 					{
 						task.parameters.push_back(10);
@@ -352,7 +367,7 @@ namespace PointcloudTaskCreation
 			// Where should task publish its output cloud?
 			if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/publish_topic", temp_string) )
 			{
-				ROS_WARN_STREAM("[PointcloudTaskCreation] Failed to get publishing topic for transform, in " << task_list[i] << " task of process " << yaml_file_name << "." );
+				ROS_WARN_STREAM("[PointcloudTaskCreation] Failed to get publishing topic in " << task_list[i] << " task of process " << yaml_file_name << "." );
 				task.pub_topic = "default_cloud_output_topic";
 			}
 			else 

@@ -1,4 +1,15 @@
 
+# ** USE THESE VALUES ** instead of hard-coding ints wherever possible, in case they change
+int32 TRANSFORM_TASK 			= 1
+int32 CLIPPING_TASK 			= 2
+int32 VOXELIZING_TASK 			= 3
+int32 PLANE_SEG_TASK 			= 4
+int32 CYLINDER_SEG_TASK 		= 5
+int32 LINE_SEG_TASK 			= 6
+int32 RADIUS_FILTER_TASK 		= 7
+int32 STATISTICAL_FILTER_TASK 	= 8
+
+
 # ************************************** Actual Data Structure ***************************************
 
 
