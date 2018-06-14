@@ -20,7 +20,7 @@ PointcloudProcessing<PointType>::PointcloudProcessing()
 
   should_shut_down = false;
   // this needs to be modified! 
-  ROS_DEBUG("[PointcloudProcessing] Server object initialized; creating advertisers.");
+  ROS_DEBUG_STREAM("[PointcloudProcessing] Server object initialized; creating advertisers.");
 
   std::string service_name;
   nh_.param<std::string>("pointcloud_service_name", service_name, "pointcloud_service");
@@ -337,7 +337,7 @@ PointcloudProcessing<PointType>::segmentTowardPlane(PCP &input, int max_iteratio
   bool plane_found;
   if(inliers->indices.size() == 0) 
   {
-    ROS_WARN("[PointcloudProcessing]   Could not find any planes in the point cloud.");
+    ROS_WARN_STREAM("[PointcloudProcessing]   Could not find any planes in the point cloud.");
     task_result.primitive_found = false;
   }  
   else 
@@ -450,7 +450,7 @@ PointcloudProcessing<PointType>::segmentTowardCylinder(PCP &input, int max_itera
 
   if(inliers->indices.size() == 0) 
   {
-    ROS_WARN("[PointcloudProcessing]   Could not find any cylinders in the point cloud.");
+    ROS_WARN_STREAM("[PointcloudProcessing]   Could not find any cylinders in the point cloud.");
     task_result.primitive_found = false;
   }  
   else 
@@ -546,12 +546,12 @@ PointcloudProcessing<PointType>::segmentTowardLine(PCP &input, int max_iteration
 
   if(inliers->indices.size() == 0) 
   {
-    ROS_INFO("[PointcloudProcessing]   Could not find any lines in the point cloud.");
+    ROS_INFO_STREAM("[PointcloudProcessing]   Could not find any lines in the point cloud.");
     task_result.primitive_found = false;
   }  
   else 
   {
-    ROS_INFO("[PointcloudProcessing]   Successfully removed a line. Size = %lu", inliers->indices.size());
+    ROS_INFO_STREAM("[PointcloudProcessing]   Successfully removed a line. Size = " << inliers->indices.size());
     task_result.primitive_found = true;
   }
 
@@ -685,8 +685,8 @@ PointcloudProcessing<PointType>::checkMinSize(int cloud_size, int min_num_points
 {
   if(cloud_size <= min_num_points) 
   {
-    ROS_ERROR("[PointcloudProcessing] Point cloud is too small to proces: Min: %u, actual: %u", min_num_points, cloud_size);
-    ROS_ERROR("[PointcloudProcessing] Exiting during %s phase of processing.", task_name.c_str());
+    ROS_ERROR_STREAM("[PointcloudProcessing] Point cloud is too small to proces: Min: " << min_num_points << ", actual: " << cloud_size);
+    ROS_ERROR_STREAM("[PointcloudProcessing] Exiting during " << task_name.c_str() << " phase of processing.");
     return false;
   }
   return true;
