@@ -27,24 +27,10 @@ bool should_publish_remainder
 bool remove_cloud
 
 
+
 # *********************************************** USAGE ***********************************************
 
-# For all task types, PUB_TOPIC and SHOULD_PUBLISH are self-explanatory. 
-# Currently, planned or existing support for the following task types:
-
-# -------------- move-it! ---------------
-# Allows movement of an serial robot arm to re-position a camera. 
-#   name = "move_it";
-#   more to add later... NOT SUPPORTED YET
-#   will rely on external implementation of ROS move-it! 
-
-
-# -------------- navigation ---------------
-# Allows movement of a robot base to re-position a camera. 
-#   name = "navigation";
-#   more to add later... NOT SUPPORTED YET
-#   will rely on external implementation of ROS nav_stack 
-
+#  See github package .readme for a full description of implemented functions and their parameters 
 
 # -------------- Clipping --------------
 # Clips the input pointcloud by the rectangular box bounded by these dimensions. 
@@ -55,7 +41,12 @@ bool remove_cloud
 #   parameters[3] = Y_MAX;
 #   parameters[4] = Z_MIN;
 #   parameters[5] = Z_MAX;
-
+#   parameters[6] = X; 				// Pose of the bounding box, relative to cloud frame
+#   parameters[7] = Y;
+#   parameters[8] = Z;
+#   parameters[9] = Roll;
+#   parameters[10] = Pitch;
+#   parameters[11] = Yaw;
 
 # -------------- Voxelizing --------------
 # Re-samples the pointcloud more coarsely; max of one point in each box with the dimensions specified. 

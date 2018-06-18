@@ -194,15 +194,14 @@ PointcloudProcessing<PointType>::transformPointCloud(PCP &input_cloud_, std::str
   if(camera_frame_listener_.waitForTransform(starting_frame, transform_to_frame, ros::Time::now(), ros::Duration(0.5)))  
   {
     sensor_msgs::PointCloud2 transformed_cloud_pc2;
-    pcl_ros::transformPointCloud (transform_to_frame, input_pc2, transformed_cloud_pc2, camera_frame_listener_);  	// transforms input_pc2 into process_message
+    pcl_ros::transformPointCloud (transform_to_frame, input_pc2, transformed_cloud_pc2, camera_frame_listener_);    // transforms input_pc2 into process_message
     pcl::fromROSMsg(transformed_cloud_pc2, *input_cloud_);
-    current_cloud_frame_ = transform_to_frame;	
+    current_cloud_frame_ = transform_to_frame;  
     //transformed_cloud_pc2.header.frame_id = current_cloud_frame_; 
     task_result.task_pointcloud = transformed_cloud_pc2;
-
     return task_result;
-  }
-  else {  													// if Transform request times out... Continues WITHOUT TRANSFORM
+    }
+  else {                            // if Transform request times out... Continues WITHOUT TRANSFORM
     ROS_WARN_THROTTLE(60, "[PointcloudProcessing] listen for transformation from %s to %s timed out. Proceeding...", input_pc2.header.frame_id.c_str(), transform_to_frame.c_str());
     task_result.task_pointcloud = input_pc2;
     ROS_DEBUG_STREAM("[PointcloudProcessing]   Transform failed. Returning untransformed cloud...");
