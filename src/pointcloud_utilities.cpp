@@ -179,7 +179,7 @@ namespace PointcloudUtilities
     {
         pointcloud_processing_server::pointcloud_task plane_task;
         plane_task.name = name;
-        plane_task.type_ind = 5;
+        plane_task.type_ind = pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK;
         plane_task.parameters.push_back(max_segmentation_iterations);        
         plane_task.parameters.push_back(distance_threshold);        
         plane_task.should_publish = should_publish;

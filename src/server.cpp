@@ -188,7 +188,6 @@ PointcloudProcessing<PointType>::transformPointCloud(PCP &input_cloud_, std::str
   input_pc2.header.frame_id = starting_frame;
 
   pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
 
   // Transform pointcloud in space to align origin to Camera Frame
   if(camera_frame_listener_.waitForTransform(starting_frame, transform_to_frame, ros::Time::now(), ros::Duration(0.5)))  
@@ -226,7 +225,6 @@ PointcloudProcessing<PointType>::clipPointCloud(PCP &unclipped, std::vector<floa
 
   // Insert input message into results
   pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
 
   pcl::CropBox<PointType> crop;
   crop.setInputCloud(unclipped);
@@ -279,7 +277,6 @@ PointcloudProcessing<PointType>::voxelizePointCloud(PCP &unvoxelized, std::vecto
   input_pc2.header.frame_id = current_cloud_frame_;
 
   pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
 
   // Create the Filtering object: downsample the dataset
   pcl::VoxelGrid<PointType> vg;
@@ -310,7 +307,6 @@ PointcloudProcessing<PointType>::segmentTowardPlane(PCP &input, int max_iteratio
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input, input_pc2);
   input_pc2.header.frame_id = current_cloud_frame_;
-  task_result.input_pointcloud = input_pc2;
 
   // Starting cloud (populated later via Filter):
   PCP plane_cloud( new PC() );
@@ -410,7 +406,6 @@ PointcloudProcessing<PointType>::segmentTowardCylinder(PCP &input, int max_itera
   pointcloud_processing_server::pointcloud_task_result task_result;
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input, input_pc2);
-  task_result.input_pointcloud = input_pc2;
 
   // Starting cloud (populated later via Filter):
   PCP cylinder_cloud( new PC() );
@@ -519,7 +514,6 @@ PointcloudProcessing<PointType>::segmentTowardLine(PCP &input, int max_iteration
   pointcloud_processing_server::pointcloud_task_result task_result;
   sensor_msgs::PointCloud2 input_pc2;
   pcl::toROSMsg(*input, input_pc2);
-  task_result.input_pointcloud = input_pc2;
 
   // Starting cloud (populated later via Filter):
   PCP line_cloud( new PC() );
@@ -621,7 +615,6 @@ PointcloudProcessing<PointType>::radiusOutlierFilter(PCP &unfiltered, float sear
 
   // Insert input message into results
   pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
 
   // Construct filter
   pcl::RadiusOutlierRemoval<PointType> filter;
@@ -654,7 +647,6 @@ PointcloudProcessing<PointType>::statisticalOutlierFilter(PCP &unfiltered, int k
 
   // Insert input message into results
   pointcloud_processing_server::pointcloud_task_result task_result;
-  task_result.input_pointcloud = input_pc2;
 
   // Construct filter
   pcl::StatisticalOutlierRemoval<PointType> filter;

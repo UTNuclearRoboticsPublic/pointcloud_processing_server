@@ -34,7 +34,9 @@ void PointcloudProcessPublisher::updatePublishers(pointcloud_processing_server::
 		remainder_publishers_.push_back(temp_remainder_publisher);
 
 		should_publish_.push_back(process.request.tasks[i].should_publish);
-		if(process.request.tasks[i].type_ind == 5 || process.request.tasks[i].type_ind == 6 || process.request.tasks[i].type_ind == 7)
+		if( process.request.tasks[i].type_ind == pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK 		|| 
+			process.request.tasks[i].type_ind == pointcloud_processing_server::pointcloud_task::CYLINDER_SEG_TASK 	|| 
+			process.request.tasks[i].type_ind == pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK 		   )
 			should_publish_remainder_.push_back(process.request.tasks[i].should_publish_remainder);
 		else should_publish_remainder_.push_back(false);
 	}

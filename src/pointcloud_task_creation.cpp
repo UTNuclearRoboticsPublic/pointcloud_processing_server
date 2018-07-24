@@ -9,7 +9,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task transform_task;
 		transform_task.name = name;  
-		transform_task.type_ind = 1;
+		transform_task.type_ind = pointcloud_processing_server::pointcloud_task::TRANSFORM_TASK;
 		transform_task.str_parameters.push_back(map_name);
 		transform_task.should_publish = should_publish;
 		transform_task.pub_topic = topic;
@@ -20,7 +20,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task clipping_task;
 		clipping_task.name = name;
-		clipping_task.type_ind = 2;
+		clipping_task.type_ind = pointcloud_processing_server::pointcloud_task::CLIPPING_TASK;
 		for(int i=0; i<6; i++)
 			clipping_task.parameters.push_back(box_data[i]);       
 		for(int i=0; i<6; i++)
@@ -31,24 +31,11 @@ namespace PointcloudTaskCreation
 		return clipping_task;
 	}
 
-	pointcloud_processing_server::pointcloud_task clippingConditionalTask(std::string name, std::vector<float> box_data, bool keep_ordered, bool should_publish, std::string topic)
-	{
-		pointcloud_processing_server::pointcloud_task clipping_task;
-		clipping_task.name = name;
-		clipping_task.type_ind = 3;
-		for(int i=0; i<6; i++)
-			clipping_task.parameters.push_back(box_data[i]);   
-		clipping_task.keep_ordered = keep_ordered;        
-		clipping_task.should_publish = should_publish;
-		clipping_task.pub_topic = topic;
-		return clipping_task;
-	}
-
 	pointcloud_processing_server::pointcloud_task voxelizationTask(std::string name, float leaf_size_x, float leaf_size_y, float leaf_size_z, bool keep_ordered, bool should_publish, std::string topic)
 	{
 		pointcloud_processing_server::pointcloud_task voxelizing_task;
 		voxelizing_task.name = name;
-		voxelizing_task.type_ind = 4;
+		voxelizing_task.type_ind = pointcloud_processing_server::pointcloud_task::VOXELIZING_TASK;
 		voxelizing_task.parameters.push_back(leaf_size_x);
 		voxelizing_task.parameters.push_back(leaf_size_y); 
 		voxelizing_task.parameters.push_back(leaf_size_z);
@@ -62,7 +49,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task plane_task;
 		plane_task.name = name;
-		plane_task.type_ind = 5;
+		plane_task.type_ind = pointcloud_processing_server::pointcloud_task::PLANE_SEG_TASK;
 		plane_task.parameters.push_back(max_segmentation_iterations);        
 		plane_task.parameters.push_back(distance_threshold);        
 		plane_task.should_publish = should_publish;
@@ -77,7 +64,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task cylinder_task;
 		cylinder_task.name = name;
-		cylinder_task.type_ind = 6;
+		cylinder_task.type_ind = pointcloud_processing_server::pointcloud_task::CYLINDER_SEG_TASK;
 		cylinder_task.parameters.push_back(max_segmentation_iterations);        
 		cylinder_task.parameters.push_back(distance_threshold);        
 		cylinder_task.parameters.push_back(max_radius);
@@ -93,7 +80,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task line_task;
 		line_task.name = name;
-		line_task.type_ind = 7;
+		line_task.type_ind = pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK;
 		line_task.parameters.push_back(max_segmentation_iterations);        
 		line_task.parameters.push_back(distance_threshold);        
 		line_task.should_publish = should_publish;
@@ -108,7 +95,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task filter_task;
 		filter_task.name = name;
-		filter_task.type_ind = 9;
+		filter_task.type_ind = pointcloud_processing_server::pointcloud_task::RADIUS_FILTER_TASK;
 		filter_task.parameters.push_back(search_radius);       
 		filter_task.parameters.push_back(min_neighbors);       
 		filter_task.keep_ordered = keep_ordered;
@@ -121,7 +108,7 @@ namespace PointcloudTaskCreation
 	{
 		pointcloud_processing_server::pointcloud_task filter_task;
 		filter_task.name = name;
-		filter_task.type_ind = 8;
+		filter_task.type_ind = pointcloud_processing_server::pointcloud_task::STATISTICAL_FILTER_TASK;
 		filter_task.parameters.push_back(k_min);       
 		filter_task.parameters.push_back(std_mul);          
 		filter_task.keep_ordered = keep_ordered;
