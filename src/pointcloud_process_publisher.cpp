@@ -24,6 +24,8 @@ void PointcloudProcessPublisher::updateNodeHandle(ros::NodeHandle nh)
 
 void PointcloudProcessPublisher::updatePublishers(pointcloud_processing_server::pointcloud_process process)
 {
+	publishers_.clear();
+	remainder_publishers_.clear();
 	for(int i=0; i<process.request.tasks.size(); i++)
 	{
 		ros::Publisher temp_publisher = nh_.advertise<sensor_msgs::PointCloud2>(process.request.tasks[i].pub_topic, 1);
