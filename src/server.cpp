@@ -59,7 +59,7 @@ PointcloudProcessing<PointType>::pointcloud_service(pointcloud_processing_server
   {
     ros::Time time_start = ros::Time::now();
 
-    ROS_DEBUG_STREAM("[PointcloudProcessing] Beginning to work on task <" << req.tasks[i].name << "> with type_ind " << req.tasks[i].type_ind << ".");
+    ROS_DEBUG_STREAM("[PointcloudProcessing] Beginning to work on task <" << req.tasks[i].name << "> with type_ind " << req.tasks[i].type_ind << " and cloud size " << cloud_size);
     
     if ( !(checkMinSize(cloud_size, req.min_cloud_size, req.tasks[i].name)) ) 
     {
@@ -667,6 +667,39 @@ PointcloudProcessing<PointType>::statisticalOutlierFilter(PCP &unfiltered, int k
 
   return task_result; 
 } // -------------------------------- Statistical Outlier Removal --------------------------------
+
+
+  // ------------------------------- Moving Least Squares Smoothing ------------------------------
+template <typename PointType> pointcloud_processing_server::pointcloud_task_result 
+PointcloudProcessing<PointType>::movingLeastSquares(PCP &unfiltered, float search_radius, int polynomial_order, bool keep_ordered)
+{ 
+//  // Create input message
+//  sensor_msgs::PointCloud2 input_pc2;
+//  pcl::toROSMsg(*input_cloud_, input_pc2);
+//  input_pc2.header.frame_id = current_cloud_frame_;
+//
+//  // Insert input message into results
+//  pointcloud_processing_server::pointcloud_task_result task_result;
+//
+//  // Construct filter
+//  pcl::StatisticalOutlierRemoval<PointType> filter;
+//  filter.setInputCloud(unfiltered);
+//  filter.setMeanK(k_min);
+//  filter.setStddevMulThresh(std_mul);
+//  filter.setKeepOrganized(false);
+//  // Perform filtering
+//  filter.filter(*input_cloud_);
+//
+//  // Create output message
+//  sensor_msgs::PointCloud2 output_pc2;
+//  pcl::toROSMsg(*input_cloud_, output_pc2);
+//  output_pc2.header.frame_id = current_cloud_frame_;
+//
+//  // Insert output message into results
+//  task_result.task_pointcloud = output_pc2;
+//
+//  return task_result; 
+} // ------------------------------- Moving Least Squares Smoothing ------------------------------
 
 
   // -------------------------------- Check Min Size --------------------------------

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(pointcloud_processing_server)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -40,12 +40,13 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES pointcloud_task_creation pointcloud_process_publisher pointcloud_utilities
+  LIBRARIES pointcloud_task_creation pointcloud_process_publisher pointcloud_utilities #pointcloud_subtraction
   CATKIN_DEPENDS geometry_msgs 
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${pcl_INCLUDE_DIRS})
-
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_executable(pointcloud_processing_server src/server.cpp)
 add_dependencies(
@@ -63,11 +64,22 @@ add_dependencies(
   map_maker_pcs ${pointcloud_processing_server_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
 )
 
+add_executable(tester src/test.cpp)
+target_link_libraries( 
+  tester ${catkin_LIBRARIES}
+)
+add_dependencies(
+  tester ${pointcloud_processing_server_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+
 add_library(pointcloud_task_creation src/pointcloud_task_creation.cpp)
 add_dependencies(pointcloud_task_creation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(pointcloud_utilities src/pointcloud_utilities.cpp)
+add_library(pointcloud_utilities src/pointcloud_utilities.cpp src/pointcloud_transforms.cpp)
 add_dependencies(pointcloud_utilities ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+#add_library(pointcloud_subtraction src/pointcloud_subtraction.cpp)
+#add_dependencies(pointcloud_subtraction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(pointcloud_process_publisher src/pointcloud_process_publisher.cpp)
 add_dependencies(pointcloud_process_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

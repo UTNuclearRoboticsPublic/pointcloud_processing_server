@@ -272,7 +272,11 @@ namespace PointcloudTaskCreation
 						return false;
 					}
 					else 
+					{
+						ROS_ERROR_STREAM("we are definitely setting the remove_cloud value...");
+						ROS_ERROR_STREAM("value: " << 0+task.remove_cloud);
 						task.remove_cloud = temp_bool;
+					}
 					break;
 				case pointcloud_processing_server::pointcloud_task::LINE_SEG_TASK:			// Line Segmentation 
 					if( !nh.getParam(prefix + "/" + yaml_file_name + "/tasks/" + task_list[i] + "/max_iterations", temp_float) )

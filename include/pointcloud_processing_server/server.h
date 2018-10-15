@@ -55,6 +55,7 @@ public:
   pointcloud_processing_server::pointcloud_task_result segmentTowardLine(PCP &input, int max_iterations, float threshold_distance, bool remove_cloud);
   pointcloud_processing_server::pointcloud_task_result radiusOutlierFilter(PCP &unfiltered, float search_radius, int min_neighbors, bool keep_ordered);
   pointcloud_processing_server::pointcloud_task_result statisticalOutlierFilter(PCP &unfiltered, int k_min, float std_mul, bool keep_ordered);
+  pointcloud_processing_server::pointcloud_task_result movingLeastSquares(PCP &unfiltered, float search_radius, int polynomial_order, bool keep_ordered);
   bool checkMinSize(int cloud_size, int min_num_points, std::string task_name);
 
 protected:
