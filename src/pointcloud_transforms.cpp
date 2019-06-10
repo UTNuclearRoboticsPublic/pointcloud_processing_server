@@ -148,6 +148,11 @@ sensor_msgs::PointCloud2 PointcloudUtilities::rotateCloud(sensor_msgs::PointClou
 // *** doTRANSFORM ***
 //   transforms a pointcloud using an Eigen homogeneous matrix (4x4)
 sensor_msgs::PointCloud2 PointcloudUtilities::rotatePlaneToXZ(sensor_msgs::PointCloud2 input_plane, std::vector<float> coefficients)
+{ 
+	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+	rotatePlaneToXZ(input_plane, coefficients, transform);
+}
+sensor_msgs::PointCloud2 PointcloudUtilities::rotatePlaneToXZ(sensor_msgs::PointCloud2 input_plane, std::vector<float> coefficients, Eigen::Matrix4f &transform)
 {
 	// ----------- Finding Rotation ----------- 
 	// Output Clouds
@@ -186,6 +191,12 @@ sensor_msgs::PointCloud2 PointcloudUtilities::rotatePlaneToXZ(sensor_msgs::Point
 	rotated_plane.header.frame_id = input_plane.header.frame_id;
 	ROS_INFO_STREAM("[Rasterizer] Plane cloud rotated. Size is " << rotated_plane.height*rotated_plane.width << "; rotation quaternion coefficients: " << final_rotation.x() << " " << final_rotation.y() << " " << final_rotation.z() << " " << final_rotation.w());
 
+	Eigen::Matrix3f transform_3f = final_rotation.toRotationMatrix();
+	transform << 	transform_3f(0,0), transform_3f(0,1), transform_3f(0,2), 0,
+					transform_3f(1,0), transform_3f(1,1), transform_3f(1,2), 0,
+					transform_3f(2,0), transform_3f(2,1), transform_3f(2,2), 0,
+									0, 				   0, 				  0, 0;
+
 	return rotated_plane;
 }
 
@@ -193,7 +204,7 @@ sensor_msgs::PointCloud2 PointcloudUtilities::rotatePlaneToXZ(sensor_msgs::Point
 //   Finds the MINIMUM value in INPUT_CLOUD for the field FIELD_NAME
 float PointcloudUtilities::minValue(sensor_msgs::PointCloud2 input_cloud, char field)
 {
-	pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+	pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
 	pcl::fromROSMsg(input_cloud, pcl_cloud);
 	float min_value = 1000000;
 	if(field == 'x')
@@ -208,6 +219,10 @@ float PointcloudUtilities::minValue(sensor_msgs::PointCloud2 input_cloud, char f
 		for(int i=0; i<pcl_cloud.points.size(); i++)
 			if(pcl_cloud.points[i].z < min_value)
 				min_value = pcl_cloud.points[i].z;
+	if(field == 'i')
+		for(int i=0; i<pcl_cloud.points.size(); i++)
+			if(pcl_cloud.points[i].intensity < min_value)
+				min_value = pcl_cloud.points[i].intensity;
 	return min_value;
 }
 
@@ -215,7 +230,7 @@ float PointcloudUtilities::minValue(sensor_msgs::PointCloud2 input_cloud, char f
 // Finds the MAXIMUM value in INPUT_CLOUD for the field FIELD_NAME
 float PointcloudUtilities::maxValue(sensor_msgs::PointCloud2 input_cloud, char field)
 {
-	pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+	pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
 	pcl::fromROSMsg(input_cloud, pcl_cloud);
 	float max_value = -1000000;
 	if(field == 'x')
@@ -230,6 +245,10 @@ float PointcloudUtilities::maxValue(sensor_msgs::PointCloud2 input_cloud, char f
 		for(int i=0; i<pcl_cloud.points.size(); i++)
 			if(pcl_cloud.points[i].z > max_value)
 				max_value = pcl_cloud.points[i].z;
+	if(field == 'i')
+		for(int i=0; i<pcl_cloud.points.size(); i++)
+			if(pcl_cloud.points[i].intensity > max_value)
+				max_value = pcl_cloud.points[i].intensity;
 	return max_value;
 }
 
@@ -280,10 +299,29 @@ void PointcloudUtilities::cloudLimits(sensor_msgs::PointCloud2 input_cloud, floa
 	*max_z = maxValue(input_cloud, 'z');
 }
 
+// *** cloudLimits ***
+//   6 return float values are passed by parameter reference 
+void PointcloudUtilities::cloudLimits(sensor_msgs::PointCloud2 input_cloud, float* min_x, float* max_x, float* min_y, float* max_y, float* min_z, float* max_z, float* min_intensity, float* max_intensity)
+{
+	*min_x = minValue(input_cloud, 'x');
+	*max_x = maxValue(input_cloud, 'x');
+	*min_y = minValue(input_cloud, 'y');
+	*max_y = maxValue(input_cloud, 'y');
+	*min_z = minValue(input_cloud, 'z');
+	*max_z = maxValue(input_cloud, 'z');
+	*min_intensity = minValue(input_cloud, 'i');
+	*max_intensity = maxValue(input_cloud, 'i');
+}
+
 // *** translatePlaneToXZ ***
 //   Translates a planar pointcloud, assumed to be parallel to XZ, to the XZ plane 
 //   Actually, just fixes the centroid of the cloud to be on XZ and the min values in X and Z to be on the origin 
 sensor_msgs::PointCloud2 PointcloudUtilities::translatePlaneToXZ(sensor_msgs::PointCloud2 input_cloud)
+{ 
+	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+	translatePlaneToXZ(input_cloud, transform);
+}
+sensor_msgs::PointCloud2 PointcloudUtilities::translatePlaneToXZ(sensor_msgs::PointCloud2 input_cloud, Eigen::Matrix4f &transform)
 {
 	// ----------- Finding Translation ----------- 
 	// Output Clouds
@@ -304,6 +342,11 @@ sensor_msgs::PointCloud2 PointcloudUtilities::translatePlaneToXZ(sensor_msgs::Po
 	tf2::doTransform (input_cloud, translated_cloud, cloud_translation);  	// transforms input_pc2 into process_message
 	translated_cloud.header.stamp = input_cloud.header.stamp;
 	translated_cloud.header.frame_id = input_cloud.header.frame_id;
+
+	transform << 	1, 0, 0, -min_x,
+					0, 1, 0, -mean_y,
+					0, 0, 1, -max_z,
+					0, 0, 0, 1;
 
 	ROS_INFO_STREAM("[Rasterizer] Plane cloud translated. Size is " << translated_cloud.height*translated_cloud.width << "; translation coefficients: " << -min_x << " " << -mean_y << " " << -max_z);
 	return translated_cloud;
