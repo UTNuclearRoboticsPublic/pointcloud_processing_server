@@ -339,7 +339,7 @@ sensor_msgs::PointCloud2 PointcloudUtilities::translatePlaneToXZ(sensor_msgs::Po
 	cloud_translation.transform.translation.y = -mean_y;
 	cloud_translation.transform.translation.z = -max_z;
 	// ----------- Performing Translation -----------
-	tf2::doTransform (input_cloud, translated_cloud, cloud_translation);  	// transforms input_pc2 into process_message
+	tf2::doTransform(input_cloud, translated_cloud, cloud_translation);  	// transforms input_pc2 into process_message
 	translated_cloud.header.stamp = input_cloud.header.stamp;
 	translated_cloud.header.frame_id = input_cloud.header.frame_id;
 

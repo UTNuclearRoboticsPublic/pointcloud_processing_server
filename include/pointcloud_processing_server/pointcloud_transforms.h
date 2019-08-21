@@ -4,17 +4,17 @@
 
 #include <ros/ros.h>
 
-#include <tf2/transform_datatypes.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-
 #include <pcl_conversions/pcl_conversions.h> 			// fromROSMsg(), toROSMsg() 
 #include <Eigen/Dense>
-
-#include "pointcloud_processing_server/server.h"
 
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/PointField.h>
 
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/TransformStamped.h>
+
+#include <tf/tf.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 namespace PointcloudUtilities
 {

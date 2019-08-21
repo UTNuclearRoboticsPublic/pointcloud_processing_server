@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs 
   message_generation
   tf
+  tf2
+  tf2_sensor_msgs
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -40,8 +42,8 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES pointcloud_task_creation pointcloud_process_publisher pointcloud_utilities #pointcloud_subtraction
-  CATKIN_DEPENDS geometry_msgs 
+  LIBRARIES pointcloud_task_creation pointcloud_process_publisher pointcloud_utilities
+  # CATKIN_DEPENDS 
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${pcl_INCLUDE_DIRS})
@@ -77,9 +79,6 @@ add_dependencies(pointcloud_task_creation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${
 
 add_library(pointcloud_utilities src/pointcloud_utilities.cpp src/pointcloud_transforms.cpp)
 add_dependencies(pointcloud_utilities ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-#add_library(pointcloud_subtraction src/pointcloud_subtraction.cpp)
-#add_dependencies(pointcloud_subtraction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(pointcloud_process_publisher src/pointcloud_process_publisher.cpp)
 add_dependencies(pointcloud_process_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
